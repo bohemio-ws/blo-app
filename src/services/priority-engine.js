@@ -1,0 +1,4 @@
+const WEIGHT={critical:400,high:300,normal:200,low:100};
+function dueScore(dueAt,now){if(!dueAt)return 0;const ms=new Date(dueAt).getTime()-now.getTime();if(ms<0)return 250;const hours=ms/3600000;if(hours<=24)return 180;if(hours<=72)return 100;if(hours<=168)return 50;return 0;}
+export function rankTasks(tasks,now=new Date()){return tasks.filter(task=>task.status!=='done'&&task.status!=='cancelled').map(task=>({...task,importance:(WEIGHT[task.priority]??WEIGHT.normal)+dueScore(task.dueAt,now)+(task.nextAction?80:0)})).sort((a,b)=>b.importance-a.importance||String(a.dueAt??'').localeCompare(String(b.dueAt??'')));}
+export class PriorityEngine{rank(tasks,{now=new Date()}={}){return rankTasks(tasks,now);}whatMattersNow(tasks,{now=new Date(),limit=5}={}){return rankTasks(tasks,now).slice(0,limit);}}
