@@ -1,0 +1,11 @@
+{
+  "name":"Bohemio Live Organization",
+  "short_name":"BLO",
+  "description":"Organización inteligente bajo la filosofía Bohemio4Infinity.",
+  "start_url":"../",
+  "scope":"../",
+  "display":"standalone",
+  "background_color":"#0d0d0f",
+  "theme_color":"#111111",
+  "lang":"es"
+}
