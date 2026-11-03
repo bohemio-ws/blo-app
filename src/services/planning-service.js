@@ -1,2 +1,35 @@
-import{createProject,createObjective,createMilestone,createTask}from'../domain/planning.js';
-export class PlanningService{constructor(repositories,{operations=null,events=null}={}){this.repositories=repositories;this.operations=operations;this.events=events;}createProject(input){return this.#mutate({action:'planning.project.create',entityType:'project',metadata:{source:'planning'},execute:async()=>{const entity=createProject(input);await this.repositories.projects.save(entity);await this.events?.emit('planning.project.created',{projectId:entity.id});return entity;}});}createObjective(input){return this.#mutate({action:'planning.objective.create',entityType:'objective',metadata:{projectId:input.projectId},execute:async()=>{await this.#requireProject(input.projectId);const entity=createObjective(input);await this.repositories.objectives.save(entity);await this.events?.emit('planning.objective.created',{projectId:entity.projectId,objectiveId:entity.id});return entity;}});}createMilestone(input){return this.#mutate({action:'planning.milestone.create',entityType:'milestone',metadata:{projectId:input.projectId},execute:async()=>{await this.#requireProject(input.projectId);const entity=createMilestone(input);await this.repositories.milestones.save(entity);await this.events?.emit('planning.milestone.created',{projectId:entity.projectId,milestoneId:entity.id});return entity;}});}createTask(input){return this.#mutate({action:'planning.task.create',entityType:'task',metadata:{projectId:input.projectId},execute:async()=>{await this.#requireProject(input.projectId);const entity=createTask(input);await this.repositories.tasks.save(entity);await this.events?.emit('planning.task.created',{projectId:entity.projectId,taskId:entity.id});return entity;}});}completeTask(id){return this.#changeTaskStatus(id,'done','planning.task.complete');}blockTask(id){return this.#changeTaskStatus(id,'blocked','planning.task.block');}resumeTask(id){return this.#changeTaskStatus(id,'pending','planning.task.resume');}async #changeTaskStatus(id,status,action){return this.#mutate({action,entityType:'task',entityId:id,execute:async()=>{const current=await this.repositories.tasks.get(id);if(!current)throw new Error('Tarea no encontrada.');const updated={...current,status,updatedAt:new Date().toISOString()};await this.repositories.tasks.save(updated);await this.events?.emit('planning.task.changed',{projectId:updated.projectId,taskId:id,status});return updated;}});}#mutate(operation){if(!this.operations)return operation.execute();return this.operations.run({authority:1,...operation});}async #requireProject(projectId){if(!projectId)throw new Error('projectId es obligatorio.');const project=await this.repositories.projects.get(projectId);if(!project)throw new Error('Proyecto no encontrado.');return project;}}
+import { createProject, createObjective, createMilestone, createTask } from '../domain/planning.js';
+
+export class PlanningService {
+  constructor(repositories, { operations = null, events = null } = {}) {
+    this.repositories = repositories;
+    this.operations = operations;
+    this.events = events;
+  }
+
+  createProject(input) {
+    return this.#mutate({ action: 'planning.project.create', entityType: 'project', metadata: { source: 'planning' }, execute: async () => { const entity = createProject(input); await this.repositories.projects.save(entity); await this.events?.emit('planning.project.created', { projectId: entity.id }); return entity; } });
+  }
+  createObjective(input) {
+    return this.#mutate({ action: 'planning.objective.create', entityType: 'objective', metadata: { projectId: input.projectId }, execute: async () => { await this.#requireProject(input.projectId); const entity = createObjective(input); await this.repositories.objectives.save(entity); await this.events?.emit('planning.objective.created', { projectId: entity.projectId, objectiveId: entity.id }); return entity; } });
+  }
+  createMilestone(input) {
+    return this.#mutate({ action: 'planning.milestone.create', entityType: 'milestone', metadata: { projectId: input.projectId }, execute: async () => { await this.#requireProject(input.projectId); const entity = createMilestone(input); await this.repositories.milestones.save(entity); await this.events?.emit('planning.milestone.created', { projectId: entity.projectId, milestoneId: entity.id }); return entity; } });
+  }
+  createTask(input) {
+    return this.#mutate({ action: 'planning.task.create', entityType: 'task', metadata: { projectId: input.projectId }, execute: async () => { await this.#requireProject(input.projectId); const entity = createTask(input); await this.repositories.tasks.save(entity); await this.events?.emit('planning.task.created', { projectId: entity.projectId, taskId: entity.id }); return entity; } });
+  }
+  completeTask(id) { return this.#changeTaskStatus(id, 'done', 'planning.task.complete'); }
+  blockTask(id) { return this.#changeTaskStatus(id, 'blocked', 'planning.task.block'); }
+  resumeTask(id) { return this.#changeTaskStatus(id, 'pending', 'planning.task.resume'); }
+  setTaskDue(id, dueAt) {
+    const date = new Date(dueAt);
+    if (!dueAt || Number.isNaN(date.getTime())) throw new TypeError('Fecha de vencimiento no válida.');
+    return this.#mutate({ action: 'planning.task.schedule', entityType: 'task', entityId: id, metadata: { dueAt: date.toISOString() }, execute: async () => { const current = await this.repositories.tasks.get(id); if (!current) throw new Error('Tarea no encontrada.'); const updated = { ...current, dueAt: date.toISOString(), updatedAt: new Date().toISOString() }; await this.repositories.tasks.save(updated); await this.events?.emit('planning.task.changed', { projectId: updated.projectId, taskId: id, status: updated.status, dueAt: updated.dueAt }); return updated; } });
+  }
+  async #changeTaskStatus(id, status, action) {
+    return this.#mutate({ action, entityType: 'task', entityId: id, execute: async () => { const current = await this.repositories.tasks.get(id); if (!current) throw new Error('Tarea no encontrada.'); const updated = { ...current, status, updatedAt: new Date().toISOString() }; await this.repositories.tasks.save(updated); await this.events?.emit('planning.task.changed', { projectId: updated.projectId, taskId: id, status }); return updated; } });
+  }
+  #mutate(operation) { if (!this.operations) return operation.execute(); return this.operations.run({ authority: 1, ...operation }); }
+  async #requireProject(projectId) { if (!projectId) throw new Error('projectId es obligatorio.'); const project = await this.repositories.projects.get(projectId); if (!project) throw new Error('Proyecto no encontrado.'); return project; }
+}
