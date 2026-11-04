@@ -1,1 +1,38 @@
-function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));}function formatDue(value){if(!value)return'';const date=new Date(value);if(Number.isNaN(date.getTime()))return'';return date.toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'});}export function renderDashboard(container,snapshot={}){if(!container)return;const priorities=snapshot.priorities??snapshot.tasks??[],counts=snapshot.counts??{},blocked=snapshot.alerts?.blocked??[],overdue=snapshot.alerts?.overdue??[],next=snapshot.nextAction??priorities[0]??null,items=priorities.slice(0,5).map((item,index)=>`<li class="priority-item${index===0?' next':''}"><div><small>${index===0?'SIGUIENTE':`PRIORIDAD ${index+1}`}</small><strong>${escapeHtml(item.title??item.name??'Acción pendiente')}</strong></div>${item.dueAt?`<span>${escapeHtml(formatDue(item.dueAt))}</span>`:''}</li>`).join('');container.innerHTML=`<div class="command-summary"><div class="next-action"><small>AHORA</small><strong>${escapeHtml(next?.title??next?.name??'Sin acción urgente')}</strong></div><div class="metrics" aria-label="Resumen operativo"><span><b>${Number(counts.activeTasks??0)}</b> activas</span><span><b>${blocked.length}</b> bloqueadas</span><span><b>${overdue.length}</b> vencidas</span><span><b>${Number(counts.projects??0)}</b> proyectos</span></div></div><ul class="priority-list">${items||'<li class="empty">Sin acciones urgentes. Afrodita está preparada.</li>'}</ul>`;}
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[char]));
+}
+
+function formatDue(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+export function renderDashboard(container, snapshot = {}) {
+  if (!container) return;
+  const priorities = snapshot.priorities ?? snapshot.tasks ?? [];
+  const counts = snapshot.counts ?? {};
+  const projectLabel = snapshot.projectId ? (snapshot.projectName ?? "Proyecto activo") : "Vista general";
+  const blocked = snapshot.alerts?.blocked ?? [];
+  const overdue = snapshot.alerts?.overdue ?? [];
+  const next = snapshot.nextAction ?? priorities[0] ?? null;
+  const items = priorities.slice(0, 5).map((item, index) => `
+    <li class="priority-item${index === 0 ? ' next' : ''}">
+      <div><small>${index === 0 ? 'SIGUIENTE' : `PRIORIDAD ${index + 1}`}</small><strong>${escapeHtml(item.title ?? item.name ?? 'Acción pendiente')}</strong></div>
+      ${item.dueAt ? `<span>${escapeHtml(formatDue(item.dueAt))}</span>` : ''}
+    </li>`).join('');
+
+  container.innerHTML = `
+    <div class="command-summary">
+      <div class="active-project" aria-label="Contexto del centro de mando"><small>CONTEXTO</small><strong>${escapeHtml(projectLabel)}</strong></div>
+      <div class="next-action"><small>AHORA</small><strong>${escapeHtml(next?.title ?? next?.name ?? 'Sin acción urgente')}</strong></div>
+      <div class="metrics" aria-label="Resumen operativo">
+        <span><b>${Number(counts.activeTasks ?? 0)}</b> activas</span>
+        <span><b>${blocked.length}</b> bloqueadas</span>
+        <span><b>${overdue.length}</b> vencidas</span>
+        <span><b>${Number(counts.projects ?? 0)}</b> proyectos</span>
+      </div>
+    </div>
+    <ul class="priority-list">${items || '<li class="empty">Sin acciones urgentes. Afrodita está preparada.</li>'}</ul>`;
+}
