@@ -143,3 +143,37 @@ app.context.events.on('project.provisioned', refreshWorkspace);
 app.context.events.on('planning.task.created', refreshWorkspace);
 app.context.events.on('planning.task.changed', refreshWorkspace);
 app.context.events.on('blo:ready', refreshWorkspace);
+
+const dashboardWidgets = [
+  { id: 'priorities', title: 'Prioridades' },
+  { id: 'status', title: 'Estado' },
+  { id: 'afrodita', title: 'Afrodita' }
+];
+const widgetSettingsKey = 'blo.dashboard.widgets.v1';
+function readWidgetSettings() {
+  try { return JSON.parse(localStorage.getItem(widgetSettingsKey) || '{}'); }
+  catch { return {}; }
+}
+function renderWidgetControls() {
+  const controls = document.querySelector('#widget-controls');
+  if (!controls) return;
+  controls.replaceChildren();
+  const settings = readWidgetSettings();
+  for (const widget of dashboardWidgets) {
+    const label = document.createElement('label');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = settings[widget.id] !== false;
+    const section = document.querySelector('[data-widget="' + widget.id + '"]');
+    if (section) section.hidden = !checkbox.checked;
+    checkbox.addEventListener('change', () => {
+      const next = { ...readWidgetSettings(), [widget.id]: checkbox.checked };
+      try { localStorage.setItem(widgetSettingsKey, JSON.stringify(next)); }
+      catch { document.querySelector('#workspace-message').textContent = 'No se han podido guardar las preferencias.'; }
+      if (section) section.hidden = !checkbox.checked;
+    });
+    label.append(checkbox, document.createTextNode(widget.title));
+    controls.append(label);
+  }
+}
+renderWidgetControls();
